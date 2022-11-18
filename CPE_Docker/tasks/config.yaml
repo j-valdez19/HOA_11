@@ -1,0 +1,45 @@
+- name: Creating a Directory for Dockerfile
+  file:
+    path: /home/jvaldez19/docker_config
+    state: directory
+
+- name: Copying the Dockerfile
+  copy:
+    src: Dockerfile
+    dest: /home/jvaldez19/docker_config
+    owner: userver
+    group: userver
+
+- name: Creating Volume
+  file:
+    path: /home/jvaldez19/pages
+    state: directory
+
+- name: Constructing Image
+  community.docker.docker_image:
+    name: lamp-jvaldez19
+    tag: 1.0
+    build:
+      path: /home/jvaldez19/docker_config
+    source: build
+
+- name: Initiating Container
+  community.docker.docker_container:
+    name: lamp-jvaldez19
+    image: lamp-jvaldez19:1.0
+    state: started
+    exposed_ports:
+      - "80"
+    ports:
+      - "8080:80"
+    volumes:
+      - /home/jvaldez19/pages:/var/www/html
+
+- block:
+  - name: Verifying the Container if it is running
+    shell: docker ps
+    register: container_status
+
+  - debug:
+      msg="{{ container_status }}"
+

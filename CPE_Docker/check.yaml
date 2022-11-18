@@ -1,0 +1,15 @@
+---
+- hosts: all
+  become: true
+  pre_tasks:
+
+  - name: Update/Upgrade Ubuntu
+    package:
+      upgrade: dist
+      update_cache: yes
+      state: latest
+
+- hosts: Ubuntu_server
+  become: true
+  roles:
+    - "../CPE_Docker"

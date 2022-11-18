@@ -1,0 +1,93 @@
+- name: Uninstalling Outdated Docker Versions
+  apt:
+    name:
+      - docker
+      - docker-engine
+      - docker.io
+      - containerd
+      - runc
+    state: absent
+
+- name: Creating a Directory for Packages
+  file:
+    path: /home/jvaldez19/docker-deb
+    state: directory
+
+- name: Downloading Docker Accessories
+  get_url:
+    url: "https://download.docker.com/linux/ubuntu/dists/jammy/pool/stable/amd64/{{ item }}"
+    dest: /home/jvaldez19/docker-deb
+  with_items:
+    - containerd.io_1.6.9-1_amd64.deb
+    - docker-ce-cli_20.10.21~3-0~ubuntu-jammy_amd64.deb
+    - docker-ce_20.10.21~3-0~ubuntu-jammy_amd64.deb
+    - docker-compose-plugin_2.6.0~ubuntu-jammy_amd64.deb
+
+- name: Installing Docker Accessories
+  shell: |
+    cd /home/jvaldez19/docker-deb
+    dpkg -i "{{ item }}"
+  with_items:
+    - containerd.io_1.6.9-1_amd64.deb
+    - docker-ce-cli_20.10.21~3-0~ubuntu-jammy_amd64.deb
+    - docker-ce_20.10.21~3-0~ubuntu-jammy_amd64.deb
+    - docker-compose-plugin_2.6.0~ubuntu-jammy_amd64.deb
+
+- name: Fixing Possible Errors
+  shell: chmod 666 /var/run/docker.sock
+
+- name: Checking the creation of the Docker group
+  group:
+    name: docker
+    state: present
+
+- name: Adding Docker to the Current User's Group
+  user:
+    name: jvaldez19
+    groups: docker
+    append: yes
+
+- name: Starting Docker services
+  service:
+    name: "{{ item }}"
+    state: started
+  with_items:
+    - docker
+    - containerd
+
+- name: Installing Python
+  apt:
+    name: python3-pip
+
+- name: Installing Python sdk
+  become_user: "{{ ansible_env.SUDO_USER }}"
+  pip:
+    name:
+      - docker
+      - docker-compose
+
+- block:
+  - name: Verifying Docker service
+    shell: systemctl list-unit-files | grep docker
+    register: docker_service
+
+  - debug:
+      msg="{{ docker_service }}"
+
+- block:
+  - name: Verifying the User Groups
+    shell: groups jvaldez19
+    register: user_groups
+
+  - debug:
+       msg="{{ user_groups }}"
+
+- block:
+  - name: Verifying the Installation of Docker
+    shell: docker --version
+    register: docker_installation
+
+  - debug:
+      msg="{{ docker_installation }}"
+
+
